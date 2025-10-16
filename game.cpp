@@ -4,6 +4,7 @@
 #include <array>
 #include <random>
 #include "windows.h"
+#include <unordered_map>
 
 #define SIZE 4
 
@@ -23,6 +24,8 @@ namespace Tmpl8
 	Line compactLine(Line line);
 	Line sumLine(Line line);
 	Line invertLine(Line line);
+
+	void drawGrid(const Grid& grid, Surface* screen);
 	// -----------------------------------------------------------
 	// Initialize the application
 	// -----------------------------------------------------------
@@ -31,11 +34,31 @@ namespace Tmpl8
 
 	bool gridToUpdate;
 	char input = ' ';
+	bool winCondition;
 	
+	std::unordered_map<int, Sprite*> tileSprites;
 
 	void Game::Init()
 	{
+		tileSprites[0] = new Sprite(new Surface("assets/voidTile.png"), 1); // o "voidTile.png"
+		tileSprites[2] = new Sprite(new Surface("assets/2 Tile.png"), 1);
+		tileSprites[4] = new Sprite(new Surface("assets/4 Tile.png"), 1);
+		tileSprites[8] = new Sprite(new Surface("assets/8 Tile.png"), 1);
+		tileSprites[16] = new Sprite(new Surface("assets/16 Tile.png"), 1);
+		tileSprites[32] = new Sprite(new Surface("assets/32 Tile.png"), 1);
+		tileSprites[64] = new Sprite(new Surface("assets/64 Tile.png"), 1);
+		tileSprites[128] = new Sprite(new Surface("assets/128 Tile.png"), 1);
+		tileSprites[256] = new Sprite(new Surface("assets/256 Tile.png"), 1);
+		tileSprites[512] = new Sprite(new Surface("assets/512 Tile.png"), 1);
+		tileSprites[1024] = new Sprite(new Surface("assets/1024 Tile.png"), 1);
+		tileSprites[2048] = new Sprite(new Surface("assets/2048 Tile.png"), 1);
+		tileSprites[4096] = new Sprite(new Surface("assets/4096 Tile.png"), 1);
+		tileSprites[8192] = new Sprite(new Surface("assets/8192 Tile.png"), 1);
+		tileSprites[16384] = new Sprite(new Surface("assets/16384 Tile.png"), 1);
+		tileSprites[32768] = new Sprite(new Surface("assets/32768 Tile.png"), 1);
+		tileSprites[65536] = new Sprite(new Surface("assets/65536 Tile.png"), 1);
 		gridToUpdate = true;
+		winCondition = false;
 		//generateNewCell(&grid);
 		//Line l = { 0,2,4,0 };
 		//moveGridToLeft(l);
@@ -53,8 +76,16 @@ namespace Tmpl8
 	// -----------------------------------------------------------
 	void Game::Tick(float deltaTime)
 	{
+		if (winCondition) {
+			printf("YOU WON!!!\n");
+			grid = { 0 };
+			winCondition = false;
+			gridToUpdate = true;
+		}
+
 		if (gridToUpdate) {
-			generateNewCell(&grid);
+			if (!generateNewCell(&grid))
+				exit(0);
 			printGrid(grid);
 			gridToUpdate = false;
 		}
@@ -69,12 +100,27 @@ namespace Tmpl8
 			gridToUpdate = moveGrid(&grid, input);
 		}
 
-		//if (!generateNewCell(&grid) && gridToUpdate) {
-		//	printf("addio");
-		//	//exit(0);
-		//}
-		// clear the graphics window
 		screen->Clear(0);
+		drawGrid(grid, screen);
+	}
+
+	void drawGrid(const Grid& grid, Surface* screen)
+	{
+		const int tileSize = 128; // regola in base alle immagini
+
+		for (int i = 0; i < SIZE; i++)
+		{
+			for (int j = 0; j < SIZE; j++)
+			{
+				int value = grid[i][j];
+				Sprite* tile = tileSprites.count(value) ? tileSprites[value] : tileSprites[0];
+				if (value == 64) {
+					winCondition = true;
+				}
+
+				tile->Draw(screen, tileSize * j, tileSize * i);
+			}
+		}
 	}
 
 
@@ -184,7 +230,7 @@ namespace Tmpl8
 			row = distIndex(gen);
 			col = distIndex(gen);
 			count++;
-			if (count > SIZE * SIZE) return false;
+			if (count > SIZE * SIZE * SIZE * SIZE) return false;
 		} while ((*grid)[row][col] != 0);
 
 		std::uniform_real_distribution<> distValue(0.0, 1.0);
