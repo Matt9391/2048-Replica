@@ -13,18 +13,26 @@ namespace Tmpl8
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	
-
+	
 	using Grid = std::array<std::array<int, SIZE>, SIZE>;
 	using Line = std::array<int, SIZE>;
 
+	//method that prints the grid on the console
 	void printGrid(Grid grid);
+	//function that add a cell/number over the grid
 	bool generateNewCell(Grid* grid);
+	//function that handle the movement of the grid based on the user input
 	bool moveGrid(Grid* grid, char c);
+	//default function used to move each line to the left
 	Line moveGridToLeft(Line line);
+	//function that remove all the '0' from the line and adds them at the end
 	Line compactLine(Line line);
+	//function that sums the series of same numbers in the same line
 	Line sumLine(Line line);
+	//function that revert the given line
 	Line invertLine(Line line);
 
+	//method that print the grid on the screen with graphics
 	void drawGrid(const Grid& grid, Surface* screen);
 	// -----------------------------------------------------------
 	// Initialize the application
@@ -32,15 +40,19 @@ namespace Tmpl8
 
 	Grid grid = { 0 }; //grid[row][column]
 
+	//variable that control if the grid has to be refreshed or not
 	bool gridToUpdate;
+	//user input
 	char input = ' ';
 	bool winCondition;
 	
-	std::unordered_map<int, Sprite*> tileSprites;
+	std::unordered_map<int, Sprite*> tileSprites; //it's like a dictionary
+	//in this scenario it is really useful since grid values are number, and with std::undordered_map
+	//is possible to get values not based on index but on "keys" that in this case are the number of the nubmers of the grid
 
 	void Game::Init()
 	{
-		tileSprites[0] = new Sprite(new Surface("assets/voidTile.png"), 1); // o "voidTile.png"
+		tileSprites[0] = new Sprite(new Surface("assets/voidTile.png"), 1); //this is the void tile
 		tileSprites[2] = new Sprite(new Surface("assets/2 Tile.png"), 1);
 		tileSprites[4] = new Sprite(new Surface("assets/4 Tile.png"), 1);
 		tileSprites[8] = new Sprite(new Surface("assets/8 Tile.png"), 1);
@@ -59,10 +71,6 @@ namespace Tmpl8
 		tileSprites[65536] = new Sprite(new Surface("assets/65536 Tile.png"), 1);
 		gridToUpdate = true;
 		winCondition = false;
-		//generateNewCell(&grid);
-		//Line l = { 0,2,4,0 };
-		//moveGridToLeft(l);
-		//invertLine(l);
 	}
 	
 	// -----------------------------------------------------------
@@ -84,11 +92,13 @@ namespace Tmpl8
 		}
 
 		if (gridToUpdate) {
-			if (!generateNewCell(&grid))
+			if (!generateNewCell(&grid)) //if there's no space to generate a new cell it means you're out of moves, so you lost
 				exit(0);
 			printGrid(grid);
 			gridToUpdate = false;
 		}
+
+		//last input is used in order to prevent user from holding key issues
 		char lastInput = input;
 		input = ' ';
 		if (GetAsyncKeyState('A')) input = 'a';
@@ -113,8 +123,9 @@ namespace Tmpl8
 			for (int j = 0; j < SIZE; j++)
 			{
 				int value = grid[i][j];
-				Sprite* tile = tileSprites.count(value) ? tileSprites[value] : tileSprites[0];
-				if (value == 64) {
+				//takes the right sprite based on the value
+				Sprite* tile = tileSprites[value];
+				if (value == 2048) {
 					winCondition = true;
 				}
 
@@ -126,10 +137,12 @@ namespace Tmpl8
 
 	bool moveGrid(Grid* grid, char c) {
 		bool moved = false;
+		//it just move the grid based on the input using the before declared functions adapted to each case
 		switch (c)
 		{
 		case 'a':
 			{
+				//a means left so you just need to move it to the left then sum
 				for (int i = 0; i < SIZE; i++) {
 					Line newLine = moveGridToLeft((*grid)[i]);
 					if ((*grid)[i] != newLine) moved = true;
@@ -139,10 +152,9 @@ namespace Tmpl8
 			break;
 		case 'd':
 			{
+				//d means right so it's the same as left but you have to first invert the line
+				//then move it to the left and sum and finally re-invert the line
 				for (int i = 0; i < SIZE; i++) {
-					//Line revLine = invertLine((*grid)[i]);
-					//Line newRevLine = moveGridToLeft(revLine);
-					//Line newLine = invertLine(newRevLine);
 					Line newLine = invertLine(moveGridToLeft(invertLine((*grid)[i])));
 					if ((*grid)[i] != newLine) moved = true;
 					(*grid)[i] = newLine;
@@ -151,6 +163,9 @@ namespace Tmpl8
 			break;
 		case 'w':
 			{
+				//w means up so it is just needed to take the column and treat it like a line
+				//and move to the left and sum and finally insert in the grid as a column
+				//that's the reason for the second for loop
 				for (int i = 0; i < SIZE; i++) {
 					Line line = { (*grid)[0][i], (*grid)[1][i], (*grid)[2][i], (*grid)[3][i] };
 					Line newLine = moveGridToLeft(line);
@@ -163,11 +178,13 @@ namespace Tmpl8
 			break;
 		case 's':
 			{
+				//s means down so it is just needed to take the column and treat it like a line
+				//pretending to move it to the right, so the logic it's the same:
+				//invert, move to the left and sum, re-invert
+				//finally insert in the grid as a column
+				//that's the reason for the second for loop
 				for (int i = 0; i < SIZE; i++) {
 					Line line = { (*grid)[0][i], (*grid)[1][i], (*grid)[2][i], (*grid)[3][i] };
-					//Line revLine = invertLine(line);
-					//Line newRevLine = moveGridToLeft(revLine);
-					//Line newLine = invertLine(newRevLine);
 					Line newLine = invertLine(moveGridToLeft(invertLine(line)));
 					for (int j = 0; j < SIZE; j++) { 
 						if ((*grid)[j][i] != newLine[j]) moved = true;
@@ -183,6 +200,7 @@ namespace Tmpl8
 		return moved;
 	}
 
+	//simply invert the line
 	Line invertLine(Line line) {
 		Line lineR = { 0 };
 		for (int i = 0; i<SIZE; i++) {
@@ -191,6 +209,7 @@ namespace Tmpl8
 		return lineR;
 	}
 	
+	//it compact the line to the "left"/start and leaves 0 at the end
 	Line compactLine(Line line) {
 		Line l = { 0 };
 		int j = 0;
@@ -203,6 +222,7 @@ namespace Tmpl8
 		return l;
 	}
 
+	//it sum adiacent cells with the same value
 	Line sumLine(Line line) {
 		for (int i = 0; i < SIZE-1; i++) {
 			if (line[i] == line[i + 1]) {
@@ -221,10 +241,16 @@ namespace Tmpl8
 
 		return line;
 	}
-
+	
+	//function that generate a new cell/value in a free slot
 	bool generateNewCell(Grid* grid) {
 		int row = 0, col = 0, number = -1, count = 0;
 		double r;
+		//the generation it's actually wrong because there's a chance to lose even
+		//if you don't actually lose because the code doesn't check for availavable slot
+		//it just return false if it doens't find it in less than some iterations
+		//so i know it's wrong but since it's just a project to start using matrix i won't implement it
+		//even though implementing it is actually easy
 		std::uniform_int_distribution<> distIndex(0, 3);
 		do {
 			row = distIndex(gen);
@@ -249,7 +275,7 @@ namespace Tmpl8
 	}
 
 	void printGrid(Grid grid) {
-		system("cls");
+		//system("cls");
 		printf("----2048----\n");
 		for (int i = 0; i < SIZE; i++) {
 			for (int j = 0; j < SIZE; j++) {
